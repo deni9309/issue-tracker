@@ -11,6 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { createIssueSchema } from '@/app/validationSchemas';
 import { z } from 'zod';
 import ErrorMessage from '@/app/components/ErrorMessage';
+import Spinner from '@/app/components/Spinner';
 //import dynamic from 'next/dynamic';
 
 //const SimpleMdeReact = dynamic(() => import('react-simplemde-editor'), { ssr: false });
@@ -25,6 +26,7 @@ export default function NewIssuePage() {
    });
 
    const [ error, setError ] = useState('');
+   const [ isSubmitting, setIsSubmitting ] = useState(false);
 
    return (
       <div className='max-w-xl mx-auto space-y-3'>
@@ -37,9 +39,14 @@ export default function NewIssuePage() {
          <form className='space-y-3'
             onSubmit={handleSubmit(async (data) => {
                try {
+                  setIsSubmitting(true);
+
                   await axios.post('/api/issues', data);
                   router.push('/issues');
-               } catch (error) { setError('An unexpected error occurred!') }
+               } catch (error) {
+                  setIsSubmitting(false);
+                  setError('An unexpected error occurred!');
+               }
             })}
          >
             <h1 className='text-3xl mb-11'>Create New Issue</h1>
@@ -64,13 +71,14 @@ export default function NewIssuePage() {
             />
             <ErrorMessage>{errors.description?.message}</ErrorMessage>
 
-            <Button size="2">Create</Button>
+            <Button disabled={!isValid || isSubmitting} size="2">
+               Create {isSubmitting && <Spinner />}
+            </Button>
          </form>
       </div>
    );
 }
 
-// disabled = {!isValid}
 
 // {...register('title')} here must use the spread operator because 'register()' function returns
 // an object with 4 properties, so we can add theese properties as props to our component
