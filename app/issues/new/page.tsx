@@ -1,8 +1,8 @@
 "use client"
 import { Button, Callout, Text, TextField } from '@radix-ui/themes';
 import { ExclamationTriangleIcon, TextIcon } from '@radix-ui/react-icons';
-import SimpleMdeReact from 'react-simplemde-editor';
 import { useForm, Controller } from 'react-hook-form';
+import { SimpleMdeReact } from 'react-simplemde-editor';
 import axios from 'axios';
 import "easymde/dist/easymde.min.css";
 import { useRouter } from 'next/navigation';
@@ -10,30 +10,37 @@ import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createIssueSchema } from '@/app/validationSchemas';
 import { z } from 'zod';
+import ErrorMessage from '@/app/components/ErrorMessage';
+//import dynamic from 'next/dynamic';
 
-type IssueForm = z.infer<typeof createIssueSchema>;
+//const SimpleMdeReact = dynamic(() => import('react-simplemde-editor'), { ssr: false });
+
+type IssueForm = z.infer<typeof createIssueSchema>;  //infer this IssueForm type based on the createIssueSchema
 
 export default function NewIssuePage() {
    const router = useRouter();
    const { register, control, handleSubmit, formState: { errors, isValid } } = useForm<IssueForm>({
       resolver: zodResolver(createIssueSchema),
+      reValidateMode: "onBlur"
    });
 
    const [ error, setError ] = useState('');
 
    return (
       <div className='max-w-xl mx-auto space-y-3'>
-         {error && <Callout.Root color="red">
-            <Callout.Icon><ExclamationTriangleIcon /></Callout.Icon>
-            <Callout.Text>{error}</Callout.Text>
-         </Callout.Root>}
+         {error &&
+            <Callout.Root color="red">
+               <Callout.Icon><ExclamationTriangleIcon /></Callout.Icon>
+               <Callout.Text>{error}</Callout.Text>
+            </Callout.Root>}
 
-         <form onSubmit={handleSubmit(async (data) => {
-            try {
-               await axios.post('/api/issues', data);
-               router.push('/issues');
-            } catch (error) { setError('An unexpected error occurred!') }
-         })}
+         <form className='space-y-3'
+            onSubmit={handleSubmit(async (data) => {
+               try {
+                  await axios.post('/api/issues', data);
+                  router.push('/issues');
+               } catch (error) { setError('An unexpected error occurred!') }
+            })}
          >
             <h1 className='text-3xl mb-11'>Create New Issue</h1>
             <TextField.Root className='p-2'>
@@ -44,16 +51,18 @@ export default function NewIssuePage() {
                   {...register('title')}
                />
             </TextField.Root>
-            {errors.title && <Text color="red">{errors.title.message}</Text>}
+            <ErrorMessage>{errors.title?.message}</ErrorMessage>
 
             <Controller
-               name='description'
+               name="description"
                control={control}
                render={({ field }) => (
-                  <SimpleMdeReact placeholder="Describe your Issue..." {...field} />
+                  <SimpleMdeReact className='border border-zinc-300 border-x-0 border-t-0'
+                     placeholder="Describe your Issue..." {...field}
+                  />
                )}
             />
-            {errors.description && <Text color="red">{errors.description.message}</Text>}
+            <ErrorMessage>{errors.description?.message}</ErrorMessage>
 
             <Button size="2">Create</Button>
          </form>
@@ -61,7 +70,9 @@ export default function NewIssuePage() {
    );
 }
 
+// disabled = {!isValid}
+
 // {...register('title')} here must use the spread operator because 'register()' function returns
 // an object with 4 properties, so we can add theese properties as props to our component
 
-// For the text editor must use 'Controller' component because <SimpleMdeReact /> does not support the 'register()' function spread operator
+// For the text editor must use 'Controller' component because <SimpleMDE /> does not support the 'register()' function spread operator
